@@ -79,17 +79,9 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Utilisation d'apiService.login (qui pointe vers l'URL de production)
   const login = async (username: string, password: string) => {
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
-    const res = await fetch('http://127.0.0.1:8000/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
-    });
-    if (!res.ok) throw new Error('Échec connexion');
-    const data = await res.json();
+    const data = await apiService.login(username, password);
     setAuthToken(data.access_token);
     setUser(data.user);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
