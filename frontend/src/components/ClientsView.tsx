@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, X } from 'lucide-react';
+import { UserPlus} from 'lucide-react';
 import { apiService, Client } from '../services/api';
 
 export default function ClientsView() {

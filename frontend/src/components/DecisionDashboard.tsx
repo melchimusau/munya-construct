@@ -80,7 +80,7 @@ export default function DecisionDashboard() {
                   innerRadius={40}
                   paddingAngle={5}
                 >
-                  {expensesByCategory.map((entry, index) => (
+                  {expensesByCategory.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

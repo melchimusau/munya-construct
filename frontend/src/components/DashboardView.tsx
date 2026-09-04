@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Users, TrendingUp, DollarSign, Wallet, Activity,
-  Briefcase, ArrowUpRight, ArrowDownRight, Calendar
+  Users, TrendingUp, DollarSign, Wallet, Activity, ArrowUpRight, ArrowDownRight, Calendar
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -218,7 +217,7 @@ export default function DashboardView({ employees }: { employees: EmployeeFE[] }
                   outerRadius={80}
                   paddingAngle={5}
                 >
-                  {financeSplit.map((entry, index) => (
+                  {financeSplit.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

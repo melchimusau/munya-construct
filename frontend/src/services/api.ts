@@ -57,6 +57,9 @@ export interface Transaction {
   type: 'income' | 'expense';
   category?: string;
   reference?: string;
+  created_by?: number;
+  is_edited?: boolean;
+  edited_at?: string;
 }
 
 export interface FinancialSummary {
@@ -84,6 +87,15 @@ export interface Client {
   address?: string;
 }
 
+export interface InvoiceLine {
+  id: number;
+  invoice_id: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+}
+
 export interface Invoice {
   id: number;
   invoice_number: string;
@@ -98,13 +110,11 @@ export interface Invoice {
   lines: InvoiceLine[];
 }
 
-export interface InvoiceLine {
-  id: number;
-  invoice_id: number;
+// Type pour la création de lignes de facture (sans id/line_total)
+export interface InvoiceLineCreate {
   description: string;
   quantity: number;
   unit_price: number;
-  line_total: number;
 }
 
 export interface Supplier {
@@ -114,6 +124,15 @@ export interface Supplier {
   email?: string;
   phone?: string;
   address?: string;
+}
+
+export interface PurchaseOrderLine {
+  id: number;
+  purchase_order_id: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
 }
 
 export interface PurchaseOrder {
@@ -127,13 +146,11 @@ export interface PurchaseOrder {
   lines: PurchaseOrderLine[];
 }
 
-export interface PurchaseOrderLine {
-  id: number;
-  purchase_order_id: number;
+// Type pour la création de lignes de commande d'achat
+export interface PurchaseOrderLineCreate {
   description: string;
   quantity: number;
   unit_price: number;
-  line_total: number;
 }
 
 export interface Prime {
@@ -179,12 +196,10 @@ const headers = (): Record<string, string> => {
   return h;
 };
 
-// Gestion centralisée des erreurs 401
 const handleUnauthorized = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('auth_user');
   setAuthToken(null);
-  // Redirection douce vers la page de connexion (sans rechargement brutal)
   if (window.location.pathname !== '/') {
     window.location.href = '/';
   }
@@ -213,10 +228,7 @@ export const apiService = {
       headers: headers(),
       body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
     });
-    if (res.status === 401) {
-      handleUnauthorized();
-      throw new Error('Session expirée');
-    }
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Erreur' }));
       throw new Error(err.detail || 'Erreur changement mot de passe');
@@ -302,7 +314,7 @@ export const apiService = {
     return res.json();
   },
 
-  // PRIMES
+  // PRIMES & AVANCES
   async createPrime(prime: Omit<Prime, 'id'>): Promise<Prime> {
     const res = await fetch(`${API_BASE_URL}/primes`, {
       method: 'POST',
@@ -322,7 +334,6 @@ export const apiService = {
     return res.json();
   },
 
-  // AVANCES
   async createAvance(avance: Omit<Avance, 'id' | 'deducted'>): Promise<Avance> {
     const res = await fetch(`${API_BASE_URL}/avances`, {
       method: 'POST',
@@ -397,6 +408,20 @@ export const apiService = {
     return res.json();
   },
 
+  async updateTransaction(id: number, data: any): Promise<Transaction> {
+    const res = await fetch(`${API_BASE_URL}/transactions/${id}`, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify(data),
+    });
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Erreur' }));
+      throw new Error(err.detail || 'Erreur modification transaction');
+    }
+    return res.json();
+  },
+
   async getFinancialSummary(): Promise<FinancialSummary> {
     const res = await fetch(`${API_BASE_URL}/financial-summary`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -424,7 +449,13 @@ export const apiService = {
   },
 
   // FACTURES
-  async createInvoice(invoice: Omit<Invoice, 'id' | 'invoice_number' | 'total_ht' | 'tva_rate' | 'total_ttc' | 'status'>): Promise<Invoice> {
+  async createInvoice(invoice: {
+    client_id: number;
+    issue_date: string;
+    due_date?: string;
+    notes?: string;
+    lines: InvoiceLineCreate[];
+  }): Promise<Invoice> {
     const res = await fetch(`${API_BASE_URL}/invoices`, {
       method: 'POST',
       headers: headers(),
@@ -462,7 +493,12 @@ export const apiService = {
   },
 
   // COMMANDES D'ACHAT
-  async createPurchaseOrder(po: Omit<PurchaseOrder, 'id' | 'order_number' | 'total' | 'status'>): Promise<PurchaseOrder> {
+  async createPurchaseOrder(po: {
+    supplier_id: number;
+    order_date: string;
+    expected_date?: string;
+    lines: PurchaseOrderLineCreate[];
+  }): Promise<PurchaseOrder> {
     const res = await fetch(`${API_BASE_URL}/purchase-orders`, {
       method: 'POST',
       headers: headers(),

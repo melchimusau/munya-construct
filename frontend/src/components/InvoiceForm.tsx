@@ -43,16 +43,18 @@ export default function InvoiceForm({ onInvoiceCreated }: { onInvoiceCreated?: (
       await apiService.createInvoice({
         client_id: selectedClient,
         issue_date: issueDate,
-        due_date: dueDate || null,
+        due_date: dueDate || undefined,
         notes,
-        lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unit_price: l.unit_price }))
+        lines: lines.map(l => ({
+          description: l.description,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+        })),
       });
       setMessage('✅ Facture créée avec succès');
-      // Réinitialiser le formulaire
       setLines([{ description: '', quantity: 1, unit_price: 0 }]);
       setNotes('');
       setDueDate('');
-      // Notifier le parent pour rafraîchir la liste
       if (onInvoiceCreated) onInvoiceCreated();
     } catch (err) {
       setMessage('❌ Erreur lors de la création de la facture');

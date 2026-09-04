@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusCircle, Trash2, Search } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { apiService, Prime, Employee } from '../services/api';
 
 export default function PrimesView() {
