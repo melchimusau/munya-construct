@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+*.db
+*.sqlite3
+uploads/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+npm-debug.log*
+
+# Environnement
+.env
+.env.local
+
+# Fichiers de configuration locaux
+.vscode/
+.idea/
+
+# Fichiers de build Tauri
+src-tauri/target/
+src-tauri/gen/
