@@ -624,3 +624,16 @@ def create_admin(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Utilisateur existe déjà")
     new_user, password = crud.create_user(db, user)
     return {"message": "Admin créé", "email": new_user.email, "temporary_password": password}
+@app.post("/force-password")
+def force_password(
+    email: str,
+    new_password: str,
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    user.hashed_password = get_password_hash(new_password)
+    user.must_change_password = False
+    db.commit()
+    return {"message": "Mot de passe mis à jour", "email": user.email}
