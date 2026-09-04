@@ -1,27 +1,20 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
+import os
 
-# URL de la base de données SQLite
-SQLALCHEMY_DATABASE_URL = "sqlite:///./munya_paie.db"
+# Utilise DATABASE_URL si elle est définie (sur Render), sinon SQLite local
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./munya_paie.db")
 
-# Création du moteur
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}  # nécessaire pour SQLite
-)
+if DATABASE_URL.startswith("postgres://"):
+    # Render fournit parfois postgres:// ; SQLAlchemy 1.4+ exige postgresql://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Session locale
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Classe de base pour les modèles
 Base = declarative_base()
 
 def get_db():
-    """
-    Générateur de session de base de données.
-    Utilisé comme dépendance dans les endpoints FastAPI.
-    """
     db = SessionLocal()
     try:
         yield db
