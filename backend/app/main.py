@@ -615,3 +615,12 @@ def delete_document(
     if not deleted:
         raise HTTPException(status_code=404, detail="Document introuvable")
     return {"message": "Document supprimé"}
+
+@app.post("/create-admin")
+def create_admin(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    user.role = "admin"
+    existing = crud.get_user_by_email(db, user.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Utilisateur existe déjà")
+    new_user, password = crud.create_user(db, user)
+    return {"message": "Admin créé", "email": new_user.email, "temporary_password": password}
