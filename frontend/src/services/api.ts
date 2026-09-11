@@ -110,7 +110,6 @@ export interface Invoice {
   lines: InvoiceLine[];
 }
 
-// Type pour la création de lignes de facture (sans id/line_total)
 export interface InvoiceLineCreate {
   description: string;
   quantity: number;
@@ -146,7 +145,6 @@ export interface PurchaseOrder {
   lines: PurchaseOrderLine[];
 }
 
-// Type pour la création de lignes de commande d'achat
 export interface PurchaseOrderLineCreate {
   description: string;
   quantity: number;
@@ -206,7 +204,9 @@ const handleUnauthorized = () => {
 };
 
 export const apiService = {
-  // AUTH
+  // ----------------------------------------------------------
+  // AUTHENTIFICATION
+  // ----------------------------------------------------------
   async login(username: string, password: string): Promise<{ access_token: string; token_type: string; user: User }> {
     const formData = new URLSearchParams();
     formData.append('username', username);
@@ -235,7 +235,9 @@ export const apiService = {
     }
   },
 
-  // USERS
+  // ----------------------------------------------------------
+  // UTILISATEURS (admin)
+  // ----------------------------------------------------------
   async getUsers(): Promise<User[]> {
     const res = await fetch(`${API_BASE_URL}/users`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -254,7 +256,34 @@ export const apiService = {
     return res.json();
   },
 
-  // EMPLOYEES
+  async deleteUser(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Erreur' }));
+      throw new Error(err.detail || 'Erreur suppression utilisateur');
+    }
+  },
+
+  async resetUserPassword(userId: number): Promise<{ email: string; temporary_password: string }> {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: headers(),
+    });
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Erreur' }));
+      throw new Error(err.detail || 'Erreur réinitialisation');
+    }
+    return res.json();
+  },
+
+  // ----------------------------------------------------------
+  // EMPLOYÉS
+  // ----------------------------------------------------------
   async getEmployees(): Promise<Employee[]> {
     const res = await fetch(`${API_BASE_URL}/employees`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -279,7 +308,9 @@ export const apiService = {
     if (!res.ok) throw new Error('Erreur suppression employé');
   },
 
-  // ATTENDANCE
+  // ----------------------------------------------------------
+  // POINTAGES
+  // ----------------------------------------------------------
   async recordAttendance(employee_id: number, date: string, check_in?: string, check_out?: string, status?: string): Promise<AttendanceRecord> {
     const body: any = { employee_id, date };
     if (check_in) body.check_in = check_in;
@@ -302,7 +333,9 @@ export const apiService = {
     return res.json();
   },
 
-  // PAYROLL
+  // ----------------------------------------------------------
+  // PAIE
+  // ----------------------------------------------------------
   async calculatePayroll(startDate: string, endDate: string): Promise<PayrollEmployee[]> {
     const res = await fetch(`${API_BASE_URL}/payroll/calculate`, {
       method: 'POST',
@@ -314,7 +347,9 @@ export const apiService = {
     return res.json();
   },
 
-  // PRIMES & AVANCES
+  // ----------------------------------------------------------
+  // PRIMES
+  // ----------------------------------------------------------
   async createPrime(prime: Omit<Prime, 'id'>): Promise<Prime> {
     const res = await fetch(`${API_BASE_URL}/primes`, {
       method: 'POST',
@@ -334,6 +369,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
+  // AVANCES
+  // ----------------------------------------------------------
   async createAvance(avance: Omit<Avance, 'id' | 'deducted'>): Promise<Avance> {
     const res = await fetch(`${API_BASE_URL}/avances`, {
       method: 'POST',
@@ -353,7 +391,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // STOCK
+  // ----------------------------------------------------------
   async getStock(): Promise<StockItem[]> {
     const res = await fetch(`${API_BASE_URL}/stock`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -368,7 +408,7 @@ export const apiService = {
       body: JSON.stringify(item),
     });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
-    if (!res.ok) throw new Error('Erreur création article stock');
+    if (!res.ok) throw new Error('Erreur création article');
     return res.json();
   },
 
@@ -385,11 +425,13 @@ export const apiService = {
   async getStockMovements(): Promise<StockMovement[]> {
     const res = await fetch(`${API_BASE_URL}/stock/movements`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
-    if (!res.ok) throw new Error('Erreur chargement mouvements stock');
+    if (!res.ok) throw new Error('Erreur chargement mouvements');
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // FINANCE
+  // ----------------------------------------------------------
   async createTransaction(data: Omit<Transaction, 'id'>): Promise<Transaction> {
     const res = await fetch(`${API_BASE_URL}/transactions`, {
       method: 'POST',
@@ -429,7 +471,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // CLIENTS
+  // ----------------------------------------------------------
   async createClient(client: Omit<Client, 'id'>): Promise<Client> {
     const res = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
@@ -448,7 +492,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // FACTURES
+  // ----------------------------------------------------------
   async createInvoice(invoice: {
     client_id: number;
     issue_date: string;
@@ -473,7 +519,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // FOURNISSEURS
+  // ----------------------------------------------------------
   async createSupplier(supplier: Omit<Supplier, 'id'>): Promise<Supplier> {
     const res = await fetch(`${API_BASE_URL}/suppliers`, {
       method: 'POST',
@@ -492,7 +540,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // COMMANDES D'ACHAT
+  // ----------------------------------------------------------
   async createPurchaseOrder(po: {
     supplier_id: number;
     order_date: string;
@@ -516,7 +566,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // PORTAIL EMPLOYÉ
+  // ----------------------------------------------------------
   async getMyInfo(): Promise<Employee> {
     const res = await fetch(`${API_BASE_URL}/me`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -545,7 +597,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // BI
+  // ----------------------------------------------------------
   async getSalesMonthly(): Promise<{ month: string; total: number }[]> {
     const res = await fetch(`${API_BASE_URL}/bi/sales-monthly`, { headers: headers() });
     if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
@@ -567,7 +621,9 @@ export const apiService = {
     return res.json();
   },
 
+  // ----------------------------------------------------------
   // DOCUMENTS
+  // ----------------------------------------------------------
   async uploadDocument(file: File): Promise<DocumentItem> {
     const formData = new FormData();
     formData.append('file', file);
@@ -606,28 +662,3 @@ export const apiService = {
     if (!res.ok) throw new Error('Erreur suppression document');
   },
 };
-
-async deleteUser(id: number): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
-        method: 'DELETE',
-        headers: headers(),
-    });
-    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Erreur' }));
-        throw new Error(err.detail || 'Erreur suppression utilisateur');
-    }
-},
-
-async resetUserPassword(userId: number): Promise<{ email: string; temporary_password: string }> {
-    const res = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
-        method: 'POST',
-        headers: headers(),
-    });
-    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Erreur' }));
-        throw new Error(err.detail || 'Erreur réinitialisation');
-    }
-    return res.json();
-},
