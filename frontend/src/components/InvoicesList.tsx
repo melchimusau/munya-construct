@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Eye, Printer } from 'lucide-react';
+import { Printer, Plus } from 'lucide-react';
 import { apiService, Invoice, Client } from '../services/api';
 import InvoiceForm from './InvoiceForm';
+import { generateInvoicePDF } from '../utils/invoicePdf';
 
 export default function InvoicesList() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -15,12 +16,16 @@ export default function InvoicesList() {
         apiService.getInvoices(),
         apiService.getClients(),
       ]);
-      // Convertir les montants en nombres
       const fixedInvoices = invData.map(inv => ({
         ...inv,
         total_ht: Number(inv.total_ht),
         total_ttc: Number(inv.total_ttc),
         tva_rate: Number(inv.tva_rate),
+        lines: inv.lines.map(l => ({
+          ...l,
+          unit_price: Number(l.unit_price),
+          line_total: Number(l.line_total),
+        })),
       }));
       setInvoices(fixedInvoices);
       setClients(clientData);
@@ -29,19 +34,14 @@ export default function InvoicesList() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [refreshKey]);
+  useEffect(() => { fetchData(); }, [refreshKey]);
 
   const handleInvoiceCreated = () => {
     setShowForm(false);
     setRefreshKey(prev => prev + 1);
   };
 
-  const getClientName = (clientId: number) => {
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : '-';
-  };
+  const getClient = (clientId: number) => clients.find(c => c.id === clientId);
 
   const statusColors: Record<string, string> = {
     DRAFT: 'bg-slate-100 text-slate-600',
@@ -56,9 +56,9 @@ export default function InvoicesList() {
         <h2 className="text-xl font-bold text-slate-900">Factures</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
         >
-          {showForm ? 'Fermer' : 'Nouvelle facture'}
+          <Plus size={16} /> {showForm ? 'Fermer' : 'Nouvelle facture'}
         </button>
       </div>
 
@@ -68,7 +68,7 @@ export default function InvoicesList() {
         {invoices.length === 0 ? (
           <p className="text-sm text-slate-400">Aucune facture enregistrée.</p>
         ) : (
-          <table className="w-full text-left border-collapse min-w-[600px]">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b text-sm text-slate-500">
                 <th className="py-3 font-medium">N° Facture</th>
@@ -80,23 +80,30 @@ export default function InvoicesList() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {invoices.map(inv => (
-                <tr key={inv.id} className="border-b hover:bg-slate-50">
-                  <td className="py-3 font-medium">{inv.invoice_number}</td>
-                  <td className="py-3">{getClientName(inv.client_id)}</td>
-                  <td className="py-3">{inv.issue_date}</td>
-                  <td className="py-3">{inv.total_ttc.toFixed(2)} $</td>
-                  <td className="py-3">
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${statusColors[inv.status] || 'bg-slate-100 text-slate-600'}`}>
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td className="py-3 text-right space-x-2">
-                    <button className="text-blue-600"><Eye size={16} /></button>
-                    <button className="text-slate-400"><Printer size={16} /></button>
-                  </td>
-                </tr>
-              ))}
+              {invoices.map(inv => {
+                const client = getClient(inv.client_id);
+                return (
+                  <tr key={inv.id} className="border-b hover:bg-slate-50">
+                    <td className="py-3 font-medium">{inv.invoice_number}</td>
+                    <td className="py-3">{client?.name || '-'}</td>
+                    <td className="py-3">{inv.issue_date}</td>
+                    <td className="py-3">{inv.total_ttc.toFixed(2)} $</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${statusColors[inv.status] || 'bg-slate-100 text-slate-600'}`}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <button
+                        onClick={() => generateInvoicePDF(inv, client)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1 ml-auto"
+                      >
+                        <Printer size={14} /> Imprimer PDF
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

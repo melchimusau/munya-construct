@@ -297,33 +297,48 @@ function AppContent() {
   };
 
   if (!isAuthenticated) return <LoginView />;
+const tabs = [];
+tabs.push({ key: 'dashboard', label: 'Tableau de bord', icon: TrendingUp });
 
-  const tabs = [];
-  tabs.push({ key: 'dashboard', label: 'Tableau de bord', icon: TrendingUp });
-  if (user?.role === 'admin' || user?.role === 'rh') {
-    tabs.push({ key: 'employees', label: 'Employés', icon: Users });
-    tabs.push({ key: 'attendance', label: 'Présence', icon: CalendarCheck });
-    tabs.push({ key: 'attendance-history', label: 'Historique Présence', icon: CalendarCheck });
-    tabs.push({ key: 'payroll', label: 'Calcul de Paie', icon: CreditCard });
-    tabs.push({ key: 'primes', label: 'Primes', icon: Award });
-    tabs.push({ key: 'avances', label: 'Avances', icon: HandCoins });
-  }
-  if (user?.role === 'admin' || user?.role === 'pdg') {
-    tabs.push({ key: 'finance', label: 'Finance', icon: DollarSign });
-    tabs.push({ key: 'clients', label: 'Clients', icon: Briefcase });
-    tabs.push({ key: 'invoices', label: 'Factures', icon: FileText });
-    tabs.push({ key: 'suppliers', label: 'Fournisseurs', icon: Building2 });
-    tabs.push({ key: 'purchase-orders', label: 'Achats', icon: ShoppingCart });
-    tabs.push({ key: 'bi', label: 'Analyse (BI)', icon: BarChart3 });
-  }
-  tabs.push({ key: 'documents', label: 'Documents', icon: FolderOpen });
-  if (user?.role === 'admin') {
-    tabs.push({ key: 'admin', label: 'Utilisateurs', icon: Users });
-    tabs.push({ key: 'settings', label: 'Paramètres', icon: Settings });
-    tabs.push({ key: 'login-history', label: 'Connexions', icon: Clock });
-    tabs.push({ key: 'exports', label: 'Exports', icon: Download });
-  }
+// RH et Admin : employés, présences, paie
+if (user?.role === 'admin' || user?.role === 'rh') {
+  tabs.push({ key: 'employees', label: 'Employés', icon: Users });
+  tabs.push({ key: 'attendance', label: 'Présence', icon: CalendarCheck });
+  tabs.push({ key: 'attendance-history', label: 'Historique Présence', icon: CalendarCheck });
+  tabs.push({ key: 'payroll', label: 'Calcul de Paie', icon: CreditCard });
+  tabs.push({ key: 'primes', label: 'Primes', icon: Award });
+  tabs.push({ key: 'avances', label: 'Avances', icon: HandCoins });
+}
 
+// Gestion de stock : accessible à tous les rôles internes (admin, rh, pdg)
+if (user?.role === 'admin' || user?.role === 'rh' || user?.role === 'pdg') {
+  tabs.push({ key: 'stock', label: 'Gestion de Stock', icon: ShoppingCart });
+}
+
+// Finance, clients, factures, fournisseurs, achats : admin et pdg
+if (user?.role === 'admin' || user?.role === 'pdg') {
+  tabs.push({ key: 'finance', label: 'Finance', icon: DollarSign });
+  tabs.push({ key: 'bi', label: 'Analyse (BI)', icon: BarChart3 });
+}
+
+// Factures visibles pour admin, rh et pdg (tout le monde sauf les employés)
+if (user?.role === 'admin' || user?.role === 'rh' || user?.role === 'pdg') {
+  tabs.push({ key: 'clients', label: 'Clients', icon: Briefcase });
+  tabs.push({ key: 'invoices', label: 'Factures', icon: FileText });
+  tabs.push({ key: 'suppliers', label: 'Fournisseurs', icon: Building2 });
+  tabs.push({ key: 'purchase-orders', label: 'Achats', icon: ShoppingCart });
+}
+
+// Documents : tout le monde
+tabs.push({ key: 'documents', label: 'Documents', icon: FolderOpen });
+
+// Admin uniquement
+if (user?.role === 'admin') {
+  tabs.push({ key: 'admin', label: 'Utilisateurs', icon: Users });
+  tabs.push({ key: 'settings', label: 'Paramètres', icon: Settings });
+  tabs.push({ key: 'login-history', label: 'Connexions', icon: Clock });
+  tabs.push({ key: 'exports', label: 'Exports', icon: Download });
+}
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardView employees={employees} />;
