@@ -6,6 +6,7 @@ import type { Invoice, Client } from '../services/api';
 export const generateInvoicePDF = (invoice: Invoice, client?: Client) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 14;
   let y = 20;
 
@@ -13,21 +14,32 @@ export const generateInvoicePDF = (invoice: Invoice, client?: Client) => {
   const rGrey = 75, gGrey = 85, bGrey = 99;
   const rDarkBlue = 23, gDarkBlue = 37, bDarkBlue = 84;
 
+  // --- LOGO ---
+  const logoWidth = 22;
+  const logoHeight = 22;
+  try {
+    doc.addImage(logoMunya, 'PNG', margin, y - 8, logoWidth, logoHeight);
+  } catch {
+    // si le logo ne peut pas être chargé, on continue sans
+  }
+
+  const headerX = margin + logoWidth + 6;
+
   // --- EN-TÊTE ENTREPRISE ---
   doc.setFontSize(20);
   doc.setTextColor(rBlue, gBlue, bBlue);
   doc.setFont('helvetica', 'bold');
-  doc.text('MUNYA CONSTRUCT', margin, y);
+  doc.text('MUNYA CONSTRUCT', headerX, y);
 
   y += 8;
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
   doc.setFont('helvetica', 'normal');
-  doc.text('Av. Judex Lupepe, coin marché Muyej, Kolwezi RDC', margin, y);
+  doc.text('Av. Judex Lupepe, coin marché Muyej, Kolwezi RDC', headerX, y);
   y += 5;
-  doc.text('Tél: +243 903 295 707 | +243 992 965 897', margin, y);
+  doc.text('Tél: +243 903 295 707 | +243 992 965 897', headerX, y);
   y += 5;
-  doc.text('Email: info@munya-construct.cpm', margin, y);
+  doc.text('Email: info@munya-construct.com', headerX, y);
 
   // --- EN-TÊTE CLIENT ---
   const rightX = pageWidth - margin;
@@ -126,11 +138,15 @@ export const generateInvoicePDF = (invoice: Invoice, client?: Client) => {
   };
 
   drawTotalRow('Sous-total', `${Number(invoice.total_ht).toFixed(2)} $`, false);
-  drawTotalRow(`TVA (${invoice.tva_rate}%)`, `${(Number(invoice.total_ttc) - Number(invoice.total_ht)).toFixed(2)} $`, false);
+  drawTotalRow(
+    `TVA (${invoice.tva_rate}%)`,
+    `${(Number(invoice.total_ttc) - Number(invoice.total_ht)).toFixed(2)} $`,
+    false
+  );
   drawTotalRow('Total TTC', `${Number(invoice.total_ttc).toFixed(2)} $`, true);
 
   // --- FOOTER ---
-  const footerY = doc.internal.pageSize.getHeight() - 30;
+  const footerY = pageHeight - 30;
   doc.setFillColor(rBlue, gBlue, bBlue);
   doc.rect(margin, footerY, pageWidth - margin * 2, 14, 'F');
   doc.setTextColor(255, 255, 255);
