@@ -578,3 +578,11 @@ def create_purchase_order(db: Session, po_data: schemas.PurchaseOrderCreate):
 
 def get_purchase_orders(db: Session):
     return db.query(models.PurchaseOrder).all()
+
+def delete_user(db: Session, user_id: int):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return None
+    db.delete(user)
+    db.commit()
+    return user

@@ -119,12 +119,12 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     return this.props.children;
   }
 }
-
 const AdminUsersView = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState({ full_name: '', email: '', role: 'rh' });
   const fetchUsers = async () => { try { setUsers(await apiService.getUsers()); } catch {} };
   useEffect(() => { fetchUsers(); }, []);
+
   const handleCreate = async () => {
     if (!form.full_name || !form.email) return alert('Nom et email requis');
     try {
@@ -134,6 +134,27 @@ const AdminUsersView = () => {
       fetchUsers();
     } catch { alert('Erreur création'); }
   };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Supprimer définitivement l'utilisateur "${name}" ?`)) return;
+    try {
+      await apiService.deleteUser(id);
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.message || 'Erreur suppression');
+    }
+  };
+
+  const handleResetPassword = async (id: number, name: string) => {
+    if (!confirm(`Réinitialiser le mot de passe de "${name}" ?`)) return;
+    try {
+      const result = await apiService.resetUserPassword(id);
+      alert(`✅ Mot de passe réinitialisé.\n\nEmail : ${result.email}\nNouveau mot de passe temporaire : ${result.temporary_password}\n\nCommuniquez-le à l'utilisateur. Il devra le changer à sa prochaine connexion.`);
+    } catch (err: any) {
+      alert(err.message || 'Erreur réinitialisation');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border shadow-sm p-4 md:p-6">
@@ -150,17 +171,46 @@ const AdminUsersView = () => {
         </div>
         <button onClick={handleCreate} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg">Créer</button>
       </div>
+
       <div className="bg-white rounded-2xl border shadow-sm p-4 md:p-6 overflow-x-auto">
         <h3 className="text-lg font-bold mb-4">Liste des utilisateurs</h3>
         <table className="w-full text-left border-collapse">
-          <thead><tr className="border-b"><th>Nom</th><th>Email</th><th>Rôle</th></tr></thead>
-          <tbody>{users.map(u => (<tr key={u.id} className="border-b"><td className="py-2">{u.full_name}</td><td>{u.username}</td><td>{u.role}</td></tr>))}</tbody>
+          <thead>
+            <tr className="border-b">
+              <th className="py-2">Nom</th>
+              <th className="py-2">Email</th>
+              <th className="py-2">Rôle</th>
+              <th className="py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} className="border-b hover:bg-slate-50">
+                <td className="py-2">{u.full_name}</td>
+                <td>{u.username}</td>
+                <td>{u.role}</td>
+                <td className="text-right space-x-3">
+                  <button
+                    onClick={() => handleResetPassword(u.id, u.full_name)}
+                    className="text-amber-600 hover:text-amber-800 font-medium text-xs"
+                  >
+                    Réinitialiser mot de passe
+                  </button>
+                  <button
+                    onClick={() => handleDelete(u.id, u.full_name)}
+                    className="text-red-600 hover:text-red-800 font-medium text-xs"
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
   );
 };
-
 function AppContent() {
   const { isAuthenticated, user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);

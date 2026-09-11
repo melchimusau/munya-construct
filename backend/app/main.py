@@ -8,6 +8,7 @@ from datetime import datetime, date
 from typing import List, Optional
 from pathlib import Path
 import shutil
+import secrets
 
 from .database import engine, Base, get_db
 from . import models, schemas, crud
@@ -72,9 +73,9 @@ def login(
             "full_name": user.full_name,
             "role": user.role,
             "username": user.email,
+            "must_change_password": user.must_change_password,  # ← AJOUT
         },
     }
-
 @app.post("/change-password")
 def change_password(
     data: schemas.ChangePasswordRequest,
@@ -637,3 +638,42 @@ def force_password(
     user.must_change_password = False
     db.commit()
     return {"message": "Mot de passe mis à jour", "email": user.email}
+
+@app.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Accès réservé à l'administrateur")
+    if current_user.id == user_id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
+    deleted = crud.delete_user(db, user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    return {"message": "Utilisateur supprimé"}
+
+
+
+@app.post("/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Accès réservé à l'administrateur")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Génère un mot de passe aléatoire de 10 caractères
+    new_password = secrets.token_urlsafe(8)
+    user.hashed_password = get_password_hash(new_password)
+    user.must_change_password = True  # Obligera l'utilisateur à le changer à la prochaine connexion
+    db.commit()
+    return {
+        "message": "Mot de passe réinitialisé",
+        "email": user.email,
+        "temporary_password": new_password,
+    }

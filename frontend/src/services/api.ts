@@ -606,3 +606,28 @@ export const apiService = {
     if (!res.ok) throw new Error('Erreur suppression document');
   },
 };
+
+async deleteUser(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'DELETE',
+        headers: headers(),
+    });
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Erreur' }));
+        throw new Error(err.detail || 'Erreur suppression utilisateur');
+    }
+},
+
+async resetUserPassword(userId: number): Promise<{ email: string; temporary_password: string }> {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: headers(),
+    });
+    if (res.status === 401) { handleUnauthorized(); throw new Error('Session expirée'); }
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Erreur' }));
+        throw new Error(err.detail || 'Erreur réinitialisation');
+    }
+    return res.json();
+},
